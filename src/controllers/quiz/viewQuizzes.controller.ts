@@ -15,16 +15,16 @@ export const viewQuizzes = async (ctx: Context) => {
             await ctx.reply('Could not find your user record. Please /start the bot again.');
             return
         }
-
+        
+        if (ctx.callbackQuery) {
+            await ctx.answerCbQuery();
+        }
         const quizzes = await Quiz.find({ createdBy: user._id }).sort({ createdAt: -1 });
         if (quizzes.length === 0) {
             await ctx.reply("You haven't created any quizzes yet. Create a\n /newquiz to get started!");
             return
         }
-        
-        if (ctx.callbackQuery) {
-            await ctx.answerCbQuery();
-        }
+
 
         let message = "Here are your Quizzes:\n\n";
         let counter = 1;

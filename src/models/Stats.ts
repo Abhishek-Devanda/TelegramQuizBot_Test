@@ -20,4 +20,4 @@ const QuizStatsSchema = new Schema<IQuizStats>({
 
 QuizStatsSchema.index({ quizId: 1, userId: 1 }, { unique: true });
 
-export default mongoose.model<IQuizStats>("QuizStats", QuizStatsSchema);
+export default mongoose.model<IQuizStats>("Stats", QuizStatsSchema);

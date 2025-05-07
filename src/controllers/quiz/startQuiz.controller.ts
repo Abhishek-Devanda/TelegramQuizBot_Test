@@ -3,7 +3,7 @@ import type { Message } from "telegraf/types";
 import Quiz, { type IQuiz } from "../../models/Quiz";
 import PollAnswer from "../../models/PollAnswer";
 import User from "../../models/User";
-import QuizStats from "../../models/Stats";
+import Stats from "../../models/Stats";
 import { getOrdinal } from "../../utils/getOrdinal";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -15,10 +15,14 @@ export const showQuizIntro = async (ctx: Context) => {
             await ctx.reply("No quiz ID provided. Please provide a valid quiz ID to start the quiz.");
             return;
         }
+
         const quiz = await Quiz.findOne({ quizId });
         if (!quiz) {
             await ctx.reply("Quiz not found. Please check the quiz ID and try again.");
             return;
+        }
+        if (ctx.callbackQuery) {
+            await ctx.answerCbQuery();
         }
         const quizDescription = quiz.description ? '\n\n' + quiz.description : '';
         const quizDetails =
@@ -29,6 +33,8 @@ export const showQuizIntro = async (ctx: Context) => {
             `\n\n📝 ${quiz.questions.length} questions`
             +
             `\n⌛ ${quiz.delaySeconds} seconds per question`
+            +
+            `\n📰 Votes are visible to `+ (ctx.chat?.type != 'private' ? "group members and the quiz owner": `the quiz owner`)
             +
             `\n\n🏁 Press the button below when you are ready.`;
         const keyboard = Markup.inlineKeyboard([
@@ -96,7 +102,7 @@ async function sendQuizQuestions(ctx: Context, quiz: IQuiz) {
             question.options,
             {
                 correct_option_id: question.correctOptionIndex,
-                is_anonymous: false,
+                is_anonymous: ctx.chat?.type === "private" ? true : false,
                 open_period: quiz.delaySeconds,
             }
         );
@@ -147,9 +153,9 @@ async function quizStats(ctx: Context, quiz: IQuiz) {
         else wrong++;
     }
 
-    let stats = await QuizStats.findOne({ quizId: quiz.quizId, userId: user._id });
+    let stats = await Stats.findOne({ quizId: quiz.quizId, userId: user._id });
     if (!stats) {
-        stats = new QuizStats({
+        stats = new Stats({
             quizId: quiz.quizId,
             userId: user._id,
             telegramUserId,
@@ -162,7 +168,7 @@ async function quizStats(ctx: Context, quiz: IQuiz) {
     }
 
     // Get leaderboard for this quiz
-    const allStats = await QuizStats.find({ quizId: quiz.quizId }).sort({ correct: -1 });
+    const allStats = await Stats.find({ quizId: quiz.quizId }).sort({ correct: -1 });
     const rank = allStats.findIndex(s => s.userId.equals(user._id)) + 1;
     const totalPlayers = allStats.length;
     await ctx.reply(
