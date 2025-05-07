@@ -21,6 +21,11 @@ export const viewQuizzes = async (ctx: Context) => {
             await ctx.reply("You haven't created any quizzes yet. Create a\n /newquiz to get started!");
             return
         }
+        
+        if (ctx.callbackQuery) {
+            await ctx.answerCbQuery();
+        }
+
         let message = "Here are your Quizzes:\n\n";
         let counter = 1;
         for (const quiz of quizzes) {

@@ -1,6 +1,8 @@
 import { Markup, Context } from 'telegraf';
 import User from '../../models/User';
 import Quiz from '../../models/Quiz';
+import PollAnswer from '../../models/PollAnswer';
+import Question from '../../models/Question';
 
 export const deleteQuiz = async (ctx: Context) => {
     try {
@@ -67,6 +69,15 @@ export const confirmDeleteQuiz = async (ctx: Context) => {
             await ctx.editMessageText('Quiz not found or you do not have permission to delete it.');
             return
         }
+
+        // Delete all related PollAnswers
+        await PollAnswer.deleteMany({ quizId });
+
+        // Delete all related Questions
+        const questionIds = quiz.questions.map((q: any) => q._id);
+        await Question.deleteMany({ _id: { $in: questionIds } });
+
+        await Quiz.deleteOne({ quizId });
 
         await Quiz.deleteOne({ quizId });
         await ctx.answerCbQuery('Quiz deleted.');

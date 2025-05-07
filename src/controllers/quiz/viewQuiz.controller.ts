@@ -13,7 +13,7 @@ export const viewQuiz = async (ctx: Context) => {
             await ctx.reply("Quiz not found.");
             return;
         }
-        
+
         const quizDescription = quiz.description ? '\n' + quiz.description : '';
         const quizDetails = `${quiz.name}${quizDescription}\n📝 ${quiz.questions.length} questions, ⌛ ${quiz.delaySeconds}s delay\n\nExternal sharing link:\nt.me/${ctx.botInfo.username}?start=${quizId}`;
 
