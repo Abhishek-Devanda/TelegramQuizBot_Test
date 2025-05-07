@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  telegramId: number;
+  telegramUserId: number;
   firstName: string;
   lastName?: string;
   username?: string;
@@ -12,7 +12,7 @@ export interface IUser extends Document {
 
 const UserSchema: Schema = new Schema(
   {
-    telegramId: { type: Number, required: true, unique: true, index: true },
+    telegramUserId: { type: Number, required: true, unique: true, index: true },
     firstName: { type: String, required: true },
     lastName: { type: String },
     username: { type: String },

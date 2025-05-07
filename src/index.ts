@@ -3,12 +3,14 @@ import { session as mongoSession } from 'telegraf-session-mongodb';
 import mongoose from 'mongoose';
 
 import connectDB from './utils/dbConnection';
-
+  
 import { startCommand } from './commands/start';
 import { registerQuizCommands } from './commands/quizzes';
-import { registerQuizActions } from './actions/quiz_actions';
+import { registerQuizActions } from './actions/quiz.actions';
 import { helpCommand } from './commands/help';
 import { registerFileHandler } from './commands/uploadQuiz';
+import { handlePollAnswer } from './controllers/quiz/startQuiz.controller';
+import { message } from 'telegraf/filters';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
@@ -38,6 +40,8 @@ registerFileHandler(bot);
 
 // Register Actions
 registerQuizActions(bot);
+
+bot.on('poll_answer', handlePollAnswer);
 
 // Launch bot
 bot.launch();

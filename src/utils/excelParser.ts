@@ -1,5 +1,6 @@
 import readXlsxFile, { type Schema } from 'read-excel-file/node';
-import { type IQuestion } from '../models/Quiz'; // Assuming IQuestion is exported from Quiz model
+import { } from '../models/Quiz'; // Assuming IQuestion is exported from Quiz model
+import type { IQuestion } from '../models/Question';
 
 // Define the expected schema for the Excel file
 // Columns: Question, Option A, Option B, Option C, Option D, ..., Correct Option Letter (e.g., A, B, C)
@@ -87,12 +88,12 @@ export async function parseQuizFromExcel(fileBuffer: Buffer): Promise<ParsedQuiz
 
 export function getExcelTemplateInstructions(): string {
     return `Please upload an Excel (.xlsx) file with the following columns in the first sheet:
-1.  **Question**: The text of the question.
-2.  **Option A**: Text for the first choice.
-3.  **Option B**: Text for the second choice.
-4.  **Option C**: (Optional) Text for the third choice.
-5.  **Option D**: (Optional) Text for the fourth choice.
-6.  **Correct Option Letter**: The letter (A, B, C, or D) corresponding to the correct answer.
+1.  Question: The text of the question.
+2.  Option A: Text for the first choice.
+3.  Option B: Text for the second choice.
+4.  Option C: (Optional) Text for the third choice.
+5.  Option D: (Optional) Text for the fourth choice.
+6.  Correct Option Letter: The letter (A, B, C, or D) corresponding to the correct answer.
 
 The first row should contain these exact headers. Each subsequent row represents one question.`;
 }

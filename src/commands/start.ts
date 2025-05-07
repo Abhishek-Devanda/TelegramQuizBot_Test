@@ -1,55 +1,43 @@
-import { Telegraf, Markup, Context } from 'telegraf';
-import User from '../models/User'; // Import the User model
-
+import { Markup, Context } from 'telegraf';
+import { registerOrUpdateUser } from '../controllers/user.controller';
+import { startReady } from '../controllers/quiz/startQuiz.controller';
 
 export const startCommand = async (ctx: Context) => {
-  const telegramUser = ctx.from;
-  if (!telegramUser) {
-    console.error('Could not get user info from context');
-    return ctx.reply('Sorry, I could not identify you.');
-  }
-
-  const firstName = telegramUser.first_name;
-  const lastName = telegramUser.last_name;
-  const username = telegramUser.username;
-  const telegramId = telegramUser.id;
-
   try {
-    let user = await User.findOne({ telegramId: telegramId });
-
-    if (!user) {
-      // User does not exist, create a new one
-      user = new User({
-        telegramId,
-        firstName,
-        lastName,
-        username,
-      });
-      await user.save();
-      console.log(`New user registered: ${firstName} (ID: ${telegramId})`);
-    } else {
-      // User exists, update if necessary (optional)
-      let updated = false;
-      if (user.firstName !== firstName) { user.firstName = firstName; updated = true; }
-      if (user.lastName !== lastName) { user.lastName = lastName; updated = true; }
-      if (user.username !== username) { user.username = username; updated = true; }
-      if (updated) {
-        await user.save();
-        console.log(`User details updated: ${firstName} (ID: ${telegramId})`);
-      }
+    const telegramUser = ctx.from;
+    const chatType = ctx.chat?.type;
+    if (!telegramUser) {
+      await ctx.reply('Sorry, I could not identify you.');
+      return
     }
 
-    ctx.reply(
-      `Welcome, ${firstName}! This bot will help you create a quiz with a series of multiple choice questions`,
-      Markup.inlineKeyboard([
-      [Markup.button.callback('Create New Quiz', 'NEW_QUIZ')],
-      [Markup.button.callback('My Quizzes', 'SHOW_QUIZZES')],
-      // Add other initial buttons if needed, each in its own array for vertical layout
-      ])
-    );
+    const user = await registerOrUpdateUser(telegramUser);
+    if (!user) {
+      await ctx.reply('Sorry, failed to register or update your information.');
+      return
+    }
+
+    const quizId = (ctx as any).startPayload;
+    if (quizId && quizId != '') {
+      await startReady(ctx);
+      return
+    }
+
+    if (chatType === 'private' && !quizId) {
+      await ctx.reply(
+        `Welcome, ${user.firstName ?? 'there'}! This bot will help you create a quiz with a series of multiple choice questions`,
+        Markup.inlineKeyboard([
+          [Markup.button.callback('Create New Quiz', 'NEW_QUIZ')],
+          [Markup.button.callback('My Quizzes', 'SHOW_QUIZZES')],
+          // Add other initial buttons if needed, each in its own array for vertical layout
+        ])
+      );
+      return
+    }
 
   } catch (error) {
     console.error('Error processing /start command:', error);
-    ctx.reply('An error occurred while processing your request. Please try again later.');
+    await ctx.reply('An error occurred while processing your request. Please try again later.');
+    return
   }
 }

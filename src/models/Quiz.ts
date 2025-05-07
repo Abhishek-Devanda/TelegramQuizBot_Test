@@ -1,26 +1,20 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
+import type { IQuestion } from './Question';
+import { customAlphabet } from 'nanoid';
 
-// Interface for Question subdocument
-export interface IQuestion extends Document {
-  text: string;
-  options: string[];
-  correctOptionIndex: number;
-}
-
-// Schema for Question subdocument
-const QuestionSchema: Schema = new Schema({
-  text: { type: String, required: true },
-  options: [{ type: String, required: true }], // Array of possible answers
-  correctOptionIndex: { type: Number, required: true }, // Index of the correct answer in the options array
-});
+const ALPHANUMERIC_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const generateQuizId = customAlphabet(ALPHANUMERIC_ALPHABET, 10); // Adjust length as needed
 
 // Interface for Quiz document
 export interface IQuiz extends Document {
   _id: Types.ObjectId;
+  quizId: string;
   name: string;
+  description?: string;
   createdBy: Types.ObjectId;
   questions: IQuestion[];
-  delaySeconds?: number;
+  delaySeconds: number;
+  isActive?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,13 +22,20 @@ export interface IQuiz extends Document {
 // Schema for Quiz document
 const QuizSchema: Schema = new Schema(
   {
+    quizId: {
+      type: String,
+      required: true,
+      unique: true,
+      default: () => generateQuizId(),
+      index: true, 
+    },
     name: { type: String, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    questions: [QuestionSchema], // Embed questions within the quiz document
+    questions: { type: [Schema.Types.ObjectId], ref: 'Question', required: true },
     delaySeconds: { type: Number, default: 15 }, // Default delay
+    isActive: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export const Question = mongoose.model<IQuestion>('Question', QuestionSchema); // Export Question model if needed separately
 export default mongoose.model<IQuiz>('Quiz', QuizSchema);
