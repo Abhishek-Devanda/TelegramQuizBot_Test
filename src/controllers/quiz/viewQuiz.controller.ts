@@ -20,10 +20,10 @@ export const viewQuiz = async (ctx: Context) => {
         const addToGroupUrl = `https://t.me/${ctx.botInfo?.username}?startgroup=${quiz.quizId}`;
 
         const keyboard = Markup.inlineKeyboard([
-            [Markup.button.callback('Start this quiz', `START_${quiz.quizId}`)],
+            [Markup.button.callback('Start this quiz', `SHOW_QUIZ_INTRO_${quiz.quizId}`)],
             [Markup.button.url('Start quiz in group', addToGroupUrl)],
             [Markup.button.callback('Edit quiz', `EDIT_QUIZ_${quiz.quizId}`)],
-            [Markup.button.callback('Quiz stats', `STATS_QUIZ_${quiz.quizId}`)],
+            [Markup.button.callback('Quiz stats', `STATS_${quiz.quizId}`)],
             [Markup.button.callback('Delete this quiz', `DELETE_QUIZ_${quiz.quizId}`)],
         ]);
 

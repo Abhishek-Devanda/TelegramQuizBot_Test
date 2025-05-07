@@ -9,8 +9,7 @@ import { registerQuizCommands } from './commands/quizzes';
 import { registerQuizActions } from './actions/quiz.actions';
 import { helpCommand } from './commands/help';
 import { registerFileHandler } from './commands/uploadQuiz';
-import { handlePollAnswer } from './controllers/quiz/startQuiz.controller';
-import { message } from 'telegraf/filters';
+import { handlePollAnswer } from './controllers/handlePollAnswer.controller';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 

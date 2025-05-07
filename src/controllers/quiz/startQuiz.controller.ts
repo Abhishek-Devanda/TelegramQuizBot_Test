@@ -1,12 +1,14 @@
 import { Context, Markup } from "telegraf";
-import Quiz, { type IQuiz } from "../../models/Quiz";
 import type { Message } from "telegraf/types";
+import Quiz, { type IQuiz } from "../../models/Quiz";
 import PollAnswer from "../../models/PollAnswer";
-import Question from "../../models/Question";
+import User from "../../models/User";
+import QuizStats from "../../models/Stats";
+import { getOrdinal } from "../../utils/getOrdinal";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const startReady = async (ctx: Context) => {
+export const showQuizIntro = async (ctx: Context) => {
     try {
         let quizId = (ctx as any).startPayload ?? (ctx as any).match?.[1];
         if (!quizId) {
@@ -30,7 +32,7 @@ export const startReady = async (ctx: Context) => {
             +
             `\n\n🏁 Press the button below when you are ready.`;
         const keyboard = Markup.inlineKeyboard([
-            [Markup.button.callback("I'm ready!", `Ready_${quiz.quizId}`)],
+            [Markup.button.callback("I'm ready!", `BEGIN_QUIZ_SESSION_${quiz.quizId}`)],
         ]);
 
         await ctx.reply(quizDetails, keyboard);
@@ -43,7 +45,7 @@ export const startReady = async (ctx: Context) => {
     }
 }
 
-export const startQuiz = async (ctx: Context) => {
+export const beginQuizSession = async (ctx: Context) => {
     try {
         let quizId = (ctx as any).match?.[1];
         if (!quizId) {
@@ -89,12 +91,10 @@ export const startQuiz = async (ctx: Context) => {
 
 async function sendQuizQuestions(ctx: Context, quiz: IQuiz) {
     for (const question of quiz.questions) {
-        const pollMsg = await ctx.replyWithPoll(
+        const pollMsg = await ctx.replyWithQuiz(
             question.text,
             question.options,
             {
-                // @ts-ignore
-                type: "quiz", // Poll type not supported in Telegraf yet
                 correct_option_id: question.correctOptionIndex,
                 is_anonymous: false,
                 open_period: quiz.delaySeconds,
@@ -121,57 +121,58 @@ async function sendQuizQuestions(ctx: Context, quiz: IQuiz) {
         await delay(quiz.delaySeconds * 1000);
     }
     await ctx.reply("Quiz completed! Thank you for participating.");
+    // await quizStats(ctx, quiz);
     return;
 }
 
-export async function handlePollAnswer(ctx: Context) {
-    try {
-        const pollAnswer = ctx.pollAnswer
-        if (!pollAnswer || !pollAnswer.user) return;
-
-        const { quizId, questionId, correctOptionIndex } = await getQuizIdAndQuestionIdByPollId(pollAnswer.poll_id);
-        const selectedOption = pollAnswer.option_ids[0];
-        const isCorrect = selectedOption === correctOptionIndex;
-
-        await PollAnswer.updateOne(
-            {
-                telegramUserId: pollAnswer.user.id,
-                pollId: pollAnswer.poll_id,
-                quizId,
-                questionId,
-            },
-            {
-                $set: {
-                    selectedOption,
-                    isCorrect,
-                    answeredAt: new Date(),
-                },
-            }
-        );
+async function quizStats(ctx: Context, quiz: IQuiz) {
+    const telegramUserId = ctx.from?.id;
+    if (!telegramUserId) {
+        await ctx.reply("Could not identify user for stats.");
         return;
-
-    } catch (error) {
-        console.error("Error handling poll answer:", error);
-        await ctx.reply("An error occurred while processing your answer. Please try again later.");
     }
-}
-
-export async function getQuizIdAndQuestionIdByPollId(pollId: string) {
-    try {
-        const pollAnswer = await PollAnswer.findOne({ pollId })
-        if (!pollAnswer) throw new Error("Poll mapping not found");
-
-        // Optionally, populate question to get correctOptionIndex
-        const question = await Question.findOne({ questionId: pollAnswer.questionId });
-        if (!question) throw new Error("Question not found");
-
-        return {
-            quizId: pollAnswer.quizId,
-            questionId: pollAnswer.questionId,
-            correctOptionIndex: question.correctOptionIndex,
-        };
-    } catch (error) {
-        console.error("Error getting quiz and question by poll ID:", error);
-        throw new Error("Could not retrieve quiz and question information.");
+    const user = await User.findOne({ telegramUserId });
+    if (!user) {
+        await ctx.reply("Could not find user for stats.");
+        return;
     }
+
+    // Get all answers for this user and quiz
+    const answers = await PollAnswer.find({ quizId: quiz.quizId, telegramUserId });
+    const total = quiz.questions.length;
+    let correct = 0, wrong = 0, missed = 0;
+    for (const ans of answers) {
+        if (ans.selectedOption === -1 || ans.answeredAt === null) missed++;
+        else if (ans.isCorrect) correct++;
+        else wrong++;
+    }
+
+    let stats = await QuizStats.findOne({ quizId: quiz.quizId, userId: user._id });
+    if (!stats) {
+        stats = new QuizStats({
+            quizId: quiz.quizId,
+            userId: user._id,
+            telegramUserId,
+            correct,
+            wrong,
+            missed,
+            total,
+        });
+        await stats.save();
+    }
+
+    // Get leaderboard for this quiz
+    const allStats = await QuizStats.find({ quizId: quiz.quizId }).sort({ correct: -1 });
+    const rank = allStats.findIndex(s => s.userId.equals(user._id)) + 1;
+    const totalPlayers = allStats.length;
+    await ctx.reply(
+        `🏁 The quiz '${quiz.name}' has finished!\n\n` +
+        `You answered ${total} questions:\n\n` +
+        `✅ Correct – ${correct}\n` +
+        `❌ Wrong – ${wrong}\n` +
+        `⌛️ Missed – ${missed}\n\n` +
+        `🥇${rank}${getOrdinal(rank)} place out of ${totalPlayers}.\n\n` +
+        `You can take this quiz again but it will not change your place on the leaderboard.`
+    );
+    return;
 }

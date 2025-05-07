@@ -2,7 +2,7 @@ import type { Context } from "telegraf";
 import User from "../../models/User";
 import Quiz from "../../models/Quiz";
 
-export const showQuizzes = async (ctx: Context) => {
+export const viewQuizzes = async (ctx: Context) => {
     try {
         const telegramUserId = ctx.from?.id;
         if (!telegramUserId) {
@@ -24,7 +24,7 @@ export const showQuizzes = async (ctx: Context) => {
         let message = "Here are your Quizzes:\n\n";
         let counter = 1;
         for (const quiz of quizzes) {
-            message += `${counter}. ${quiz.name}\n📝 ${quiz.questions.length} questions, ⌛ ${quiz.delaySeconds}s delay\n/view_${quiz.quizId}\n\n`;
+            message += `${counter}. ${quiz.name}\n📝 ${quiz.questions.length} questions, ⌛ ${quiz.delaySeconds}s delay\n/viewQuiz_${quiz.quizId}\n\n`;
             counter++;
         }
         await ctx.reply(message);

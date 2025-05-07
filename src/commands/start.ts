@@ -1,6 +1,6 @@
 import { Markup, Context } from 'telegraf';
 import { registerOrUpdateUser } from '../controllers/user.controller';
-import { startReady } from '../controllers/quiz/startQuiz.controller';
+import { showQuizIntro } from '../controllers/quiz/startQuiz.controller';
 
 export const startCommand = async (ctx: Context) => {
   try {
@@ -19,7 +19,7 @@ export const startCommand = async (ctx: Context) => {
 
     const quizId = (ctx as any).startPayload;
     if (quizId && quizId != '') {
-      await startReady(ctx);
+      await showQuizIntro(ctx);
       return
     }
 
