@@ -23,17 +23,20 @@ export const startCommand = async (ctx: Context) => {
       return
     }
 
-    if (chatType === 'private' && !quizId) {
-      await ctx.reply(
-        `Welcome, ${user.firstName ?? 'there'}! This bot will help you create a quiz with a series of multiple choice questions`,
-        Markup.inlineKeyboard([
-          [Markup.button.callback('Create New Quiz', 'NEW_QUIZ')],
-          [Markup.button.callback('My Quizzes', 'SHOW_QUIZZES')],
-          // Add other initial buttons if needed, each in its own array for vertical layout
-        ])
-      );
-      return
+    const welcomeText = `Welcome, ${user.firstName ?? 'there'}! This bot will help you create a quiz with a series of multiple choice questions`;
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('Create New Quiz', 'NEW_QUIZ')],
+      [Markup.button.callback('My Quizzes', 'SHOW_QUIZZES')],
+    ]);
+
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(welcomeText, keyboard);
+      await ctx.answerCbQuery();
+    } else if (chatType === 'private' && !quizId) {
+      await ctx.reply(welcomeText, keyboard);
     }
+
+    return
 
   } catch (error) {
     console.error('Error processing /start command:', error);

@@ -10,6 +10,7 @@ import { registerQuizActions } from './actions/quiz.actions';
 import { helpCommand } from './commands/help';
 import { registerFileHandler } from './commands/uploadQuiz';
 import { handlePollAnswer } from './controllers/handlePollAnswer.controller';
+import { registerBackActions } from './actions/back.action';
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
@@ -39,6 +40,7 @@ registerFileHandler(bot);
 
 // Register Actions
 registerQuizActions(bot);
+registerBackActions(bot);
 
 bot.on('poll_answer', handlePollAnswer);
 
